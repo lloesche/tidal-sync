@@ -42,9 +42,7 @@ def main() -> None:
         local_albums.extend(album_dirs)
     for album in favorites.get("ALBUM", []):
         album_str = f"[{album}]"
-        if any([s for s in local_albums if album_str in s]):
-            log.info(f"Already have {album}")
-        else:
+        if not any([s for s in local_albums if album_str in s]):
             log.info(f"Downloading {album}")
             downloads.append(album)
     for album in downloads:
