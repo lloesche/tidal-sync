@@ -1,6 +1,7 @@
 import sys
-import os
+import contextlib
 from pathlib import Path
+from tqdm import tqdm
 import logging
 import tidal_dl
 import requests
@@ -45,8 +46,9 @@ def main() -> None:
         if not any([s for s in local_albums if album_str in s]):
             log.info(f"Downloading {album}")
             downloads.append(album)
-    for album in downloads:
-        tidal_dl.start(tidal_dl.TOKEN, tidal_dl.CONF, album)
+    for album in tqdm(downloads):
+        with nostdout():
+            tidal_dl.start(tidal_dl.TOKEN, tidal_dl.CONF, album)
 
 
 def get_arg_parser() -> ArgumentParser:
@@ -60,6 +62,25 @@ def get_arg_parser() -> ArgumentParser:
         default=False,
     )
     return arg_parser
+
+
+class DummyFile(object):
+  file = None
+  def __init__(self, file):
+    self.file = file
+
+  def write(self, x):
+    # Avoid print() second call (useless \n)
+    if len(x.rstrip()) > 0:
+        tqdm.write(x, file=self.file)
+
+
+@contextlib.contextmanager
+def nostdout():
+    save_stdout = sys.stdout
+    sys.stdout = DummyFile(sys.stdout)
+    yield
+    sys.stdout = save_stdout
 
 
 if __name__ == "__main__":
