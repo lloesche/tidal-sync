@@ -5,9 +5,7 @@ from tqdm import tqdm
 import logging
 import tidal_dl
 import requests
-from aigpy.stringHelper import isNull
 from argparse import ArgumentParser
-from pprint import pprint
 
 logging.getLogger("tidal-sync").setLevel(logging.INFO)
 logging.basicConfig(
@@ -25,7 +23,13 @@ def main() -> None:
     arg_parser = get_arg_parser()
     arg_parser.parse_args()
     log.info("TIDAL-Sync starting up")
-    tidal_dl.checkLogin()
+    tidal_dl.SETTINGS.read(tidal_dl.getProfilePath())
+    tidal_dl.TOKEN.read(tidal_dl.getTokenPath())
+    if not tidal_dl.apiKey.isItemValid(tidal_dl.SETTINGS.apiKeyIndex):
+        tidal_dl.changeApiKey()
+        tidal_dl.loginByWeb()
+    elif not tidal_dl.loginByConfig():
+        tidal_dl.loginByWeb()
     uri = f"https://listen.tidal.com/v1/users/{tidal_dl.TOKEN.userid}/favorites/ids"
     header = {
         "authorization": "Bearer {}".format(tidal_dl.TOKEN.accessToken),
@@ -33,8 +37,11 @@ def main() -> None:
     }
     params = {"countryCode": tidal_dl.TOKEN.countryCode}
     respond = requests.get(uri, headers=header, params=params)
+    if respond.status_code != 200:
+        log.error("Failed to get favorites")
+        return
     favorites = respond.json()
-    album_dir = Path(tidal_dl.CONF.downloadPath + "/Album")
+    album_dir = Path(tidal_dl.SETTINGS.downloadPath + "/Album")
     artist_dirs = [d for d in album_dir.iterdir() if d.is_dir()]
     local_albums = []
     downloads = []
@@ -48,7 +55,7 @@ def main() -> None:
             downloads.append(album)
     for album in tqdm(downloads):
         with nostdout():
-            tidal_dl.start(tidal_dl.TOKEN, tidal_dl.CONF, album)
+            tidal_dl.start(album)
 
 
 def get_arg_parser() -> ArgumentParser:
