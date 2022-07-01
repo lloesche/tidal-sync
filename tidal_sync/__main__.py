@@ -41,7 +41,7 @@ def main() -> None:
         log.error("Failed to get favorites")
         return
     favorites = respond.json()
-    album_dir = Path(tidal_dl.SETTINGS.downloadPath + "/Album")
+    album_dir = Path(tidal_dl.SETTINGS.downloadPath)
     artist_dirs = [d for d in album_dir.iterdir() if d.is_dir()]
     local_albums = []
     downloads = []
