@@ -42,17 +42,25 @@ def main() -> None:
         return
     favorites = respond.json()
     album_dir = Path(tidal_dl.SETTINGS.downloadPath)
+    video_dir = album_dir / "Video"
     artist_dirs = [d for d in album_dir.iterdir() if d.is_dir()]
     local_albums = []
+    local_videos = []
     downloads = []
     for artist_dir in artist_dirs:
         album_dirs = [d.name for d in artist_dir.iterdir() if d.is_dir()]
         local_albums.extend(album_dirs)
+    local_videos = [v.name for v in video_dir.iterdir() if v.is_file()]
     for album in favorites.get("ALBUM", []):
         album_str = f"[{album}]"
         if not any([s for s in local_albums if album_str in s]):
             log.info(f"Downloading {album}")
             downloads.append(album)
+    for video in favorites.get("VIDEO", []):
+        video_str = f"[{video}]"
+        if not any([s for s in local_videos if video_str in s]):
+            log.info(f"Downloading {video}")
+            downloads.append(video)
     for album in tqdm(downloads):
         with nostdout():
             tidal_dl.start(album)
